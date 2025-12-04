@@ -1,72 +1,40 @@
 pipeline {
-    agent {
-        label 'king'
+   agent { label 'java' }
+     // agent any
+    tools {
+        jdk 'JDK17'
+        maven 'maven'
     }
 
-    environment {
-        TOMCAT_HOST = '172.31.3.184'
-        TOMCAT_USER = 'root'
-        TOMCAT_DIR = '/opt/apache-tomcat-8.5.98/webapps'
-        JAR_FILE = 'bus-booking-app-1.0-SNAPSHOT.jar'  // Replace with the actual name of your JAR file
-    }
+   stages {
 
-    stages {
-        stage('checkout') {
+        stage('Checkout') {
             steps {
-                sh 'rm -rf bus_booking'
-                sh 'git clone https://github.com/sudhasanshi/bus_booking.git'
+                git branch: 'feature-1', url: 'https://github.com/manij-20/bus_booking.git'
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests=false'
             }
         }
 
-        stage('build') {
+        stage('Archive Artifact') {
             steps {
-                script {
-                    def mvnHome = tool 'Maven'
-                    def mvnCMD = "${mvnHome}/bin/mvn"
-                    sh "${mvnCMD} clean install"
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+
+        stage('Run Application') {
+            steps {
+                  sh 'mvn spring-boot:run'
+                  dir('/var/lib/jenkins/workspace/Parcel_service_feature-1/target') {
+                   sh """
+                     //   nohup java -jar simple-parcel-service-app-1.0-SNAPSHOT.jar > app.log 2>&1 &
+                        //echo "Application started"
+                   """
                 }
             }
-        }
-
-        stage('Show Contents of target') {
-            steps {
-                script {
-                    // Print the contents of the target directory
-                    sh 'ls -l target'
-                }
-            }
-        }
-
-        stage('Run JAR Locally') {
-            steps {
-                script {
-                    // Run the JAR file using java -jar
-                    sh "java -jar target/${JAR_FILE}"
-                }
-            }
-        }
-
-        stage('Deploy JAR to Tomcat') {
-            steps {
-                script {
-                    // Copy JAR to Tomcat server
-                    sh "scp target/${JAR_FILE} ${TOMCAT_USER}@${TOMCAT_HOST}:${TOMCAT_DIR}/"
-
-                    // SSH into Tomcat server and restart Tomcat
-                    sh "ssh ${TOMCAT_USER}@${TOMCAT_HOST} 'bash -s' < restart-tomcat.sh"
-
-                    echo "Application deployed and Tomcat restarted"
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            echo "Build, Run, and Deployment to Tomcat successful!"
-        }
-        failure {
-            echo "Build, Run, and Deployment to Tomcat failed!"
         }
     }
 }
