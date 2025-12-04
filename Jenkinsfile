@@ -29,9 +29,9 @@ pipeline {
         stage('Run Application') {
             steps {
                 sh 'mvn spring-boot:run'
-                dir('/var/lib/jenkins/workspace/Parcel_service_feature-1/target') {
+                dir('/var/lib/jenkins/workspace/Bus_booking_feature-1/target') {
                     sh '''
-                        # nohup java -jar simple-parcel-service-app-1.0-SNAPSHOT.jar > app.log 2>&1 &
+                        # nohup java -jar bus-booking-app-1.0-SNAPSHOT.jar > app.log 2>&1 &
                         # echo "Application started"
                     '''
                 }
